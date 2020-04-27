@@ -1,0 +1,490 @@
+﻿<!DOCTYPE HTML>
+
+<!-- saved from url=(0038)http://godeung.woobi.co.kr/latlng.html -->
+<!DOCTYPE html PUBLIC "" "">
+<HTML>
+
+<HEAD>
+    <META content="IE=11.0000" http-equiv="X-UA-Compatible">
+    <META charset="utf-8">
+    <TITLE>지도데이터 생성</TITLE>
+    <STYLE>
+        #container {
+            overflow: hidden;
+            height: 650px;
+            position: relative;
+        }
+
+        #mapWrapper {
+            width: 100%;
+            height: 650px;
+            z-index: 1;
+        }
+
+        #rvWrapper {
+            width: 50%;
+            height: 650px;
+            top: 0;
+            right: 0;
+            position: absolute;
+            z-index: 0;
+        }
+
+        #container.view_roadview #mapWrapper {
+            width: 50%;
+        }
+
+        #roadviewControl {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 65px;
+            height: 24px;
+            padding: 2px;
+            z-index: 1;
+            background: #f7f7f7;
+            border-radius: 4px;
+            border: 1px solid #c8c8c8;
+            box-shadow: 0px 1px #888;
+            cursor: pointer;
+        }
+
+        #roadviewControl span {
+            background: url(http://t1.daumcdn.net/localimg/localimages/07/mapapidoc/mapworker.png) no-repeat;
+            padding-left: 23px;
+            height: 24px;
+            font-size: 12px;
+            display: inline-block;
+            line-height: 2;
+            font-weight: bold;
+        }
+
+        #roadviewControl.active {
+            background: #ccc;
+            box-shadow: 0px 1px #5F616D;
+            border: 1px solid #7F818A;
+        }
+
+        #roadviewControl.active span {
+            background: url(http://t1.daumcdn.net/localimg/localimages/07/mapapidoc/mapworker_on.png) no-repeat;
+            color: #4C4E57;
+        }
+
+        #close {
+            position: absolute;
+            padding: 4px;
+            top: 5px;
+            left: 5px;
+            cursor: pointer;
+            background: #fff;
+            border-radius: 4px;
+            border: 1px solid #c8c8c8;
+            box-shadow: 0px 1px #888;
+        }
+
+        #close .img {
+            display: block;
+            background: url(http://t1.daumcdn.net/localimg/localimages/07/mapapidoc/rv_close.png) no-repeat;
+            width: 14px;
+            height: 14px;
+        }
+    </STYLE>
+    <META name="GENERATOR" content="MSHTML 11.00.9600.19036">
+</HEAD>
+
+<BODY>
+    <DIV>
+        <TEXTAREA id="latlng_area" rows="10" cols="100"></TEXTAREA> <BUTTON onclick="drawMarkers()">OK</BUTTON> <BUTTON onclick="deleteMarkers()">Clear Markers
+        </BUTTON> <BUTTON onclick="document.getElementById('latlng_area').value = '';">Clear Text
+        </BUTTON>
+        <INPUT width="10" id="markerNum" type="text"><BUTTON onclick="prevNumber();">-</BUTTON><BUTTON onclick="nextNumber();">+</BUTTON>
+        <BUTTON onclick="prevGo();">Prev</BUTTON><BUTTON onclick="nextGo();">Next</BUTTON><BUTTON onclick="goToMarker()">Go</BUTTON>
+        <INPUT id="newMarker" type="checkbox" />새 마커 추가
+    </DIV>
+    <DIV id="container">
+        <DIV id="rvWrapper">
+            <DIV id="roadview" style="width: 100%; height: 650px;"></DIV>
+            <!--— 로드뷰를 표시할 div 입니다 —-->
+
+            <DIV title="로드뷰닫기" id="close" onclick="closeRoadview()"><SPAN class="img"></SPAN></DIV>
+        </DIV>
+
+        <DIV id="mapWrapper">
+
+            <DIV id="map" style="width: 100%; height: 650px;"></DIV>
+            <!--— 지도를 표시할 div 입니다 —-->
+
+            <DIV id="roadviewControl" onclick="setRoadviewRoad()"><SPAN>로드뷰</SPAN></DIV>
+        </DIV>
+    </DIV>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=bba5e8bad7094e7c5b3eb530c31acd3f"></script>
+
+    <SCRIPT>
+        var overlayOn = false, // 지도 위에 로드뷰 오버레이가 추가된 상태를 가지고 있을 변수
+            container = document.getElementById('container'), // 지도와 로드뷰를 감싸고 있는 div 입니다
+            mapWrapper = document.getElementById('mapWrapper'), // 지도를 감싸고 있는 div 입니다
+            mapContainer = document.getElementById('map'), // 지도를 표시할 div 입니다
+            rvContainer = document.getElementById('roadview'); //로드뷰를 표시할 div 입니다
+
+
+        var mapCenter = document.getElementById('map'), // 지도를 표시할 div 
+            mapOption = {
+                center: new daum.maps.LatLng(37.19454904016702, 127.08102656532446), // 지도의 중심좌표
+                level: 7 // 지도의 확대 레벨
+            };
+
+        var map = new daum.maps.Map(mapCenter, mapOption); // 지도를 생성합니다
+
+        // 로드뷰 객체를 생성합니다
+        var rv = new daum.maps.Roadview(rvContainer);
+        // 좌표로부터 로드뷰 파노라마 ID를 가져올 로드뷰 클라이언트 객체를 생성합니다
+        var rvClient = new daum.maps.RoadviewClient();
+
+        // 일반 지도와 스카이뷰로 지도 타입을 전환할 수 있는 지도타입 컨트롤을 생성합니다
+        var mapTypeControl = new daum.maps.MapTypeControl();
+
+        // 지도에 컨트롤을 추가해야 지도위에 표시됩니다
+        // daum.maps.ControlPosition은 컨트롤이 표시될 위치를 정의하는데 TOPRIGHT는 오른쪽 위를 의미합니다
+        map.addControl(mapTypeControl, daum.maps.ControlPosition.TOPRIGHT);
+
+        // 지도 확대 축소를 제어할 수 있는  줌 컨트롤을 생성합니다
+        var zoomControl = new daum.maps.ZoomControl();
+        map.addControl(zoomControl, daum.maps.ControlPosition.RIGHT);
+
+        // 마커 이미지의 이미지 주소입니다
+        var yellowMarkerImage = new daum.maps.MarkerImage("http://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png", new daum.maps.Size(24, 35));
+        var blueMarkerImage = new daum.maps.MarkerImage("http://t1.daumcdn.net/localimg/localimages/07/mapjsapi/default_marker.png", new daum.maps.Size(40, 42));
+        var drawingFlag = false; // 선이 그려지고 있는 상태를 가지고 있을 변수입니다
+        var moveLine; // 선이 그려지고 있을때 마우스 움직임에 따라 그려질 선 객체 입니다
+        var clickLine // 마우스로 클릭한 좌표로 그려질 선 객체입니다
+        var distanceOverlay; // 선의 거리정보를 표시할 커스텀오버레이 입니다
+        var dots = {}; // 선이 그려지고 있을때 클릭할 때마다 클릭 지점과 거리를 표시하는 커스텀 오버레이 배열입니다.
+        var markers = [];
+        var recentGo = 0;
+        var idx = 0;
+        var edges = new Array(800);
+        var infoWindows = [];
+		var strokes = [];
+        var lats = [];
+        var lngs = [];
+
+        // 로드뷰에 좌표가 바뀌었을 때 발생하는 이벤트를 등록합니다
+        daum.maps.event.addListener(rv, 'position_changed', function() {
+
+            // 현재 로드뷰의 위치 좌표를 얻어옵니다
+            var rvPosition = rv.getPosition();
+
+            // 지도의 중심을 현재 로드뷰의 위치로 설정합니다
+            map.setCenter(rvPosition);
+
+            // 지도 위에 로드뷰 도로 오버레이가 추가된 상태이면
+            if (overlayOn) {
+                // 마커의 위치를 현재 로드뷰의 위치로 설정합니다
+                marker.setPosition(rvPosition);
+            }
+        });
+
+        // 마커 이미지를 생성합니다
+        var markImage = new daum.maps.MarkerImage(
+            'http://t1.daumcdn.net/localimg/localimages/07/mapapidoc/roadview_wk.png',
+            new daum.maps.Size(35, 39), {
+                //마커의 좌표에 해당하는 이미지의 위치를 설정합니다.
+                //이미지의 모양에 따라 값은 다를 수 있으나, 보통 width/2, height를 주면 좌표에 이미지의 하단 중앙이 올라가게 됩니다.
+                offset: new daum.maps.Point(14, 39)
+            });
+
+        // 드래그가 가능한 마커를 생성합니다
+        var roadViewMarker = new daum.maps.Marker({
+            image: markImage,
+            position: mapCenter,
+            draggable: true
+        });
+
+        // 마커에 dragend 이벤트를 등록합니다
+        daum.maps.event.addListener(roadViewMarker, 'dragend', function(mouseEvent) {
+
+            // 현재 마커가 놓인 자리의 좌표입니다
+            var position = roadViewMarker.getPosition();
+
+            // 마커가 놓인 위치를 기준으로 로드뷰를 설정합니다
+            toggleRoadview(position);
+        });
+
+
+        // 지도에 클릭 이벤트를 등록합니다
+        // 지도를 클릭하면 선 그리기가 시작됩니다 그려진 선이 있으면 지우고 다시 그립니다
+        daum.maps.event.addListener(map, 'click', function(mouseEvent) {
+
+            // 지도 위에 로드뷰 도로 오버레이가 추가된 상태가 아니면 클릭이벤트를 무시합니다
+            if (!overlayOn) {
+                if (document.getElementById('newMarker').checked) {
+                    // 마우스로 클릭한 위치입니다
+                    var clickPosition = mouseEvent.latLng;
+
+                    idx++;
+                    document.getElementById('latlng_area').value = document.getElementById('latlng_area').value + "\n" + idx + "\t" + mouseEvent.latLng.getLat() + "\t" + mouseEvent.latLng.getLng();
+                    var marker = new daum.maps.Marker({
+                        map: map, // 마커를 표시할 지도
+                        position: clickPosition, // 마커를 표시할 위치
+                        title: idx.toString(), // 마커의 타이틀, 마커에 마우스를 올리면 타이틀이 표시됩니다
+                        image: blueMarkerImage // 마커 이미지
+                    });
+
+                    // 마커가 지도 위에 표시되도록 설정합니다
+                    marker.setMap(map);
+
+                    // 생성된 마커를 배열에 추가합니다
+                    markers.push(marker);
+                }
+
+                return;
+
+            }
+
+            // 클릭한 위치의 좌표입니다
+            var position = mouseEvent.latLng;
+
+            // 마커를 클릭한 위치로 옮깁니다
+            roadViewMarker.setPosition(position);
+
+            // 클락한 위치를 기준으로 로드뷰를 설정합니다
+            toggleRoadview(position);
+
+        });
+
+        // 전달받은 좌표(position)에 가까운 로드뷰의 파노라마 ID를 추출하여
+        // 로드뷰를 설정하는 함수입니다
+        function toggleRoadview(position) {
+            rvClient.getNearestPanoId(position, 50, function(panoId) {
+                // 파노라마 ID가 null 이면 로드뷰를 숨깁니다
+                if (panoId === null) {
+                    toggleMapWrapper(true, position);
+                } else {
+                    toggleMapWrapper(false, position);
+
+                    // panoId로 로드뷰를 설정합니다
+                    rv.setPanoId(panoId, position);
+                }
+            });
+        }
+
+        // 지도를 감싸고 있는 div의 크기를 조정하는 함수입니다
+        function toggleMapWrapper(active, position) {
+            if (active) {
+
+                // 지도를 감싸고 있는 div의 너비가 100%가 되도록 class를 변경합니다
+                container.className = '';
+
+                // 지도의 크기가 변경되었기 때문에 relayout 함수를 호출합니다
+                map.relayout();
+
+                // 지도의 너비가 변경될 때 지도중심을 입력받은 위치(position)로 설정합니다
+                map.setCenter(position);
+            } else {
+
+                // 지도만 보여지고 있는 상태이면 지도의 너비가 50%가 되도록 class를 변경하여
+                // 로드뷰가 함께 표시되게 합니다
+                if (container.className.indexOf('view_roadview') === -1) {
+                    container.className = 'view_roadview';
+
+                    // 지도의 크기가 변경되었기 때문에 relayout 함수를 호출합니다
+                    map.relayout();
+
+                    // 지도의 너비가 변경될 때 지도중심을 입력받은 위치(position)로 설정합니다
+                    map.setCenter(position);
+                }
+            }
+        }
+
+        // 지도 위의 로드뷰 도로 오버레이를 추가,제거하는 함수입니다
+        function toggleOverlay(active) {
+            if (active) {
+                overlayOn = true;
+
+                // 지도 위에 로드뷰 도로 오버레이를 추가합니다
+                map.addOverlayMapTypeId(daum.maps.MapTypeId.ROADVIEW);
+
+                // 지도 위에 마커를 표시합니다
+                roadViewMarker.setMap(map);
+
+                // 마커의 위치를 지도 중심으로 설정합니다
+                roadViewMarker.setPosition(map.getCenter());
+
+                // 로드뷰의 위치를 지도 중심으로 설정합니다
+                toggleRoadview(map.getCenter());
+            } else {
+                overlayOn = false;
+
+                // 지도 위의 로드뷰 도로 오버레이를 제거합니다
+                map.removeOverlayMapTypeId(daum.maps.MapTypeId.ROADVIEW);
+
+                // 지도 위의 마커를 제거합니다
+                roadViewMarker.setMap(null);
+            }
+        }
+
+        // 지도 위의 로드뷰 버튼을 눌렀을 때 호출되는 함수입니다
+        function setRoadviewRoad() {
+            var control = document.getElementById('roadviewControl');
+
+            // 버튼이 눌린 상태가 아니면
+            if (control.className.indexOf('active') === -1) {
+                control.className = 'active';
+
+                // 로드뷰 도로 오버레이가 보이게 합니다
+                toggleOverlay(true);
+            } else {
+                control.className = '';
+
+                // 로드뷰 도로 오버레이를 제거합니다
+                toggleOverlay(false);
+            }
+        }
+
+        // 로드뷰에서 X버튼을 눌렀을 때 로드뷰를 지도 뒤로 숨기는 함수입니다
+        function closeRoadview() {
+            var position = roadViewMarker.getPosition();
+            toggleMapWrapper(true, position);
+        }
+
+
+        function prevNumber() {
+            var num = parseInt(document.getElementById('markerNum').value);
+            num--;
+            document.getElementById('markerNum').value = num;
+        }
+
+        function nextNumber() {
+            var num = parseInt(document.getElementById('markerNum').value);
+            num++;
+            document.getElementById('markerNum').value = num;
+        }
+
+        function prevGo() {
+            var num = parseInt(document.getElementById('markerNum').value);
+            num--;
+            document.getElementById('markerNum').value = num;
+            goToMarker();
+        }
+
+        function nextGo() {
+            var num = parseInt(document.getElementById('markerNum').value);
+            num++;
+            document.getElementById('markerNum').value = num;
+            goToMarker();
+        }
+
+        function goToMarker() {
+            markers[recentGo].setImage(blueMarkerImage);
+            var num = document.getElementById('markerNum').value;
+            markers[num - 1].setImage(yellowMarkerImage);
+            recentGo = num - 1;
+
+            for (var i = 0; i < infoWindows.length; i++) {
+                infoWindows[i].close();
+				strokes[i].setZIndex(-1);
+            }
+
+            infoWindows = [];
+			strokes = [];
+
+            for (var i = 0; i < edges[num - 1].length; i++) {
+                var iwContent = edges[num - 1][i].toString(), // 인포윈도우에 표출될 내용으로 HTML 문자열이나 document element가 가능합니다
+                    iwPosition = new daum.maps.LatLng((lats[edges[num - 1][i] - 1]), (lngs[edges[num - 1][i] - 1]));
+
+                var infowindow = new daum.maps.InfoWindow({
+                    map: map, // 인포윈도우가 표시될 지도
+                    position: iwPosition,
+                    content: iwContent
+                });
+
+                infoWindows.push(infowindow);
+            }
+
+			for (var i = 0; i < edges[num - 1].length; i++) {
+
+				// 선을 구성하는 좌표 배열입니다. 이 좌표들을 이어서 선을 표시합니다
+				var linePath = [
+					new daum.maps.LatLng((lats[num - 1]), (lngs[num - 1])),
+					new daum.maps.LatLng((lats[edges[num - 1][i] - 1]), (lngs[edges[num - 1][i] - 1]))
+				];
+
+				// 지도에 표시할 선을 생성합니다
+				var polyline = new daum.maps.Polyline({
+					path: linePath, // 선을 구성하는 좌표배열 입니다
+					strokeWeight: 5, // 선의 두께 입니다
+					strokeColor: '#FF3DE5', // 선의 색깔입니다
+					strokeOpacity: 0.7, // 선의 불투명도 입니다 1에서 0 사이의 값이며 0에 가까울수록 투명합니다
+					strokeStyle: 'solid' // 선의 스타일입니다
+				});
+
+				// 지도에 선을 표시합니다 
+				polyline.setMap(map);  
+
+				strokes.push(polyline);
+
+			}
+
+            map.setCenter(markers[num - 1].getPosition());
+        }
+
+        // Sets the map on all markers in the array.
+        function setMarkers(map) {
+            for (var i = 0; i < markers.length; i++) {
+                markers[i].setMap(map);
+            }
+        }
+
+        function clearMarkers() {
+            setMarkers(null);
+        }
+
+        function deleteMarkers() {
+            clearMarkers();
+            markers = [];
+            idx = 0;
+        }
+
+        function drawMarkers() {
+
+            var list = document.getElementById('latlng_area').value;
+            var list_split = list.split("\n");
+
+            lats = [];
+            lngs = [];
+
+            for (var i = 0; i < list_split.length; i++) {
+                var info = list_split[i].split("\t");
+
+                var edge = [];
+
+                lats.push(parseFloat(info[1]));
+                lngs.push(parseFloat(info[2]));
+
+                for (var j = 3; j < 7; j++) {
+                    if (info[j] != '') {
+                        edge.push(parseInt(info[j]));
+                    }
+                }
+
+                edges[i] = edge;
+
+                var marker = new daum.maps.Marker({
+                    map: map, // 마커를 표시할 지도
+                    position: new daum.maps.LatLng(parseFloat(info[1]), parseFloat(info[2])), // 마커를 표시할 위치
+                    title: info[0].toString(), // 마커의 타이틀, 마커에 마우스를 올리면 타이틀이 표시됩니다
+                    image: blueMarkerImage // 마커 이미지
+                });
+
+                // 마커가 지도 위에 표시되도록 설정합니다
+                marker.setMap(map);
+
+                // 생성된 마커를 배열에 추가합니다
+                markers.push(marker);
+                idx = parseInt(info[0]);
+            }
+        }
+    </SCRIPT>
+</BODY>
+
+</HTML>

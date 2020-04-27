@@ -1,0 +1,138 @@
+<!doctype html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>운전자 선호도 반영 경로 추천 시뮬레이터</title>
+	<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+	<link rel="stylesheet" href="css/navi.css" />
+</head>
+
+<body>
+	<div id="top">
+		<h1>운전자 선호도 반영 경로 추천 시뮬레이터</h1>
+		<form method="post" action="#">
+			<input type="button" id="routeAnalyzeMode" value="개별 운전자 주행경로 생성/분석 모드" onclick="routeAnalyze();">
+			<input type="button" id="routeFindMode" value="개별 운전자 추천 경로 탐색 모드" onclick="routeFind();"> &nbsp;&nbsp;
+			<div id="analyzeMode">
+				요소 : 
+				<input type="checkbox" onclick="getFeatureChildren(0);" id="markerChildrenCheckbox_1" /> 어린이보호구역 
+				<input type="checkbox" onclick="getFeatureEnforce(0);" id="markerEnforceCheckbox_1" /> 단속카메라 
+				<input type="checkbox" onclick="getFeatureSignal(0);" id="markerSignalCheckbox_1" /> 신호등 &nbsp;&nbsp;
+				운전자 :
+				<input type="radio" name="driverNameAnalyze" value="A" checked> A
+				<input type="radio" name="driverNameAnalyze" value="B"> B &nbsp;&nbsp;
+				<input type="button" value="운전자 특성 확인" onclick='viewDriverCoef((document.getElementsByName("driverNameAnalyze")[0].checked) ? document.getElementsByName("driverNameAnalyze")[0].value :
+				document.getElementsByName("driverNameAnalyze")[1].value);'>
+				<input type="button" value="운전자 특성 초기화" onclick='resetDriverCoef((document.getElementsByName("driverNameAnalyze")[0].checked) ? document.getElementsByName("driverNameAnalyze")[0].value :
+				document.getElementsByName("driverNameAnalyze")[1].value);'>
+				<input type="button" value="경로 복사" onclick="copyToClipboard();">
+				<input type="button" value="경로 초기화" onclick="clearRoute();">
+				<input type="button" value="분석결과 반영" onclick='endRoute((document.getElementsByName("driverNameAnalyze")[0].checked) ? document.getElementsByName("driverNameAnalyze")[0].value :
+				document.getElementsByName("driverNameAnalyze")[1].value);'>
+			</div>
+			<div id="findMode">
+				요소 : 
+				<input type="checkbox" onclick="getFeatureChildren(1);" id="markerChildrenCheckbox_2" /> 어린이보호구역 
+				<input type="checkbox" onclick="getFeatureEnforce(1);" id="markerEnforceCheckbox_2" /> 단속카메라 
+				<input type="checkbox" onclick="getFeatureSignal(1);" id="markerSignalCheckbox_2" /> 신호등 &nbsp;&nbsp;
+				출발 :
+				<input type="text" id="startNode" maxlength="3"> 도착 :
+				<input type="text" id="finishNode" maxlength="3"> &nbsp;&nbsp; 운전자 :
+				<input type="radio" name="driverNameRoute" value="A" checked> A
+				<input type="radio" name="driverNameRoute" value="B"> B &nbsp;&nbsp; 시간 :
+				<input type="button" value="+" onclick="adjustHour('+');">
+				<input type="button" value="-" onclick="adjustHour('-');"> &nbsp;&nbsp;
+				<input type="button" value="운전자 특성 확인" onclick='viewDriverCoef((document.getElementsByName("driverNameRoute")[0].checked) ? document.getElementsByName("driverNameRoute")[0].value :
+				document.getElementsByName("driverNameRoute")[1].value);'>
+				<input type="button" value="경로찾기" onclick="getRoute()">
+			</div>
+		</form>
+	</div>
+	<div id="background">
+		<div id="map">
+			<div id="clock"></div>
+		</div>
+		<div id="info">
+			<h1 id="searchResult">분석결과</h1>
+			<div id="analyzeTab">
+				<div id="tab1">
+					<h1>주행 경로</h1>
+					<div id="line1">
+						<h3>어린이보호구역</h3>
+						<h4 id="children_analyze">-</h4>
+						<h3>신호등</h3>
+						<h4 id="signal_analyze">-</h4>
+					</div>
+					<div id="line2">
+						<h3>교차로</h3>
+						<h4 id="cross_analyze">-</h4>
+						<h3>단속카메라</h3>
+						<h4 id="enforce_analyze">-</h4>
+						<h3>도로너비</h3>
+						<h4 id="road_width_analyze">-</h4>
+					</div>
+				</div>
+				<div id="tab1">
+					<h1>최소 시간 경로</h1>
+					<div id="line1">
+						<h3>어린이보호구역</h3>
+						<h4 id="children_analyze_minimum">-</h4>
+						<h3>신호등</h3>
+						<h4 id="signal_analyze_minimum">-</h4>
+					</div>
+					<div id="line2">
+						<h3>교차로</h3>
+						<h4 id="cross_analyze_minimum">-</h4>
+						<h3>단속카메라</h3>
+						<h4 id="enforce_analyze_minimum">-</h4>
+						<h3>도로너비</h3>
+						<h4 id="road_width_analyze_minimum">-</h4>
+					</div>
+				</div>
+			</div>
+			<div id="routeTab">
+				<div id="tab2" onclick="zoomRecommend();">
+					<h1>추천 경로</h1>
+					<h2 id="recommendResult">-</h2>
+					<div id="line1">
+						<h3>어린이보호구역</h3>
+						<h4 id="children_recommend">-</h4>
+						<h3>신호등</h3>
+						<h4 id="signal_recommend">-</h4>
+					</div>
+					<div id="line2">
+						<h3>교차로</h3>
+						<h4 id="cross_recommend">-</h4>
+						<h3>단속카메라</h3>
+						<h4 id="enforce_recommend">-</h4>
+						<h3>도로너비</h3>
+						<h4 id="road_width_recommend">-</h4>
+					</div>
+				</div>
+				<div id="tab2" onclick="zoomMinimum();">
+					<h1>최소 시간</h1>
+					<h2 id="minimumResult">-</h2>
+					<div id="line1">
+						<h3>어린이보호구역</h3>
+						<h4 id="children_minimum">-</h4>
+						<h3>신호등</h3>
+						<h4 id="signal_minimum">-</h4>
+					</div>
+					<div id="line2">
+						<h3>교차로</h3>
+						<h4 id="cross_minimum">-</h4>
+						<h3>단속카메라</h3>
+						<h4 id="enforce_minimum">-</h4>
+						<h3>도로너비</h3>
+						<h4 id="road_width_minimum">-</h4>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=bba5e8bad7094e7c5b3eb530c31acd3f"></script>
+	<script type="text/javascript" src="js/navi.js"></script>
+</body>
+
+</html>
