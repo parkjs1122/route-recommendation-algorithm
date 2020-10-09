@@ -74,12 +74,12 @@
 
 ## 과제수행 과정 (1) - 가상 지도 데이터 생성 (2)
 ### 지도 데이터 생성 과정 (1)
-![지도생성 1](https://github.com/parkjs1122/Projects/blob/master/Graduation%20Project/PPT/map_making_1.png)
+![지도생성 1](https://github.com/parkjs1122/route-recommendation-algorithm/blob/master/PPT/map_making_1.png)
 
 
 ## 과제수행 과정 (1) - 가상 지도 데이터 생성 (3)
 ### 지도 데이터 생성 과정 (2)
-![지도생성 1](https://github.com/parkjs1122/Projects/blob/master/Graduation%20Project/PPT/map_making_2.png)
+![지도생성 1](https://github.com/parkjs1122/route-recommendation-algorithm/blob/master/PPT/map_making_2.png)
 
 
 ## 과제수행 과정 (2) - 개별 운전자 주행패턴 분석
@@ -115,12 +115,12 @@
 
 ## 과제수행 과정 (3) - 개인별 추천 경로 생성 (2)
 ### 어린이 보호구역과 신호등을 회피하는 운전자 예시 (a =100, b=70, c=0, d=0, e=0)
-![휴리스틱 함수 예시](https://github.com/parkjs1122/Projects/blob/master/Graduation%20Project/PPT/heuristic_example_1.png)
+![휴리스틱 함수 예시](https://github.com/parkjs1122/route-recommendation-algorithm/blob/master/PPT/heuristic_example_1.png)
 
 
 ## 과제수행 과정 (3) - 개인별 추천 경로 생성 (3)
 ### 어린이 보호구역과 신호등을 회피하는 운전자 예시 (a =100, b=70, c=0, d=0, e=0)
-![휴리스틱 함수 예시](https://github.com/parkjs1122/Projects/blob/master/Graduation%20Project/PPT/heuristic_example_2.png)
+![휴리스틱 함수 예시](https://github.com/parkjs1122/route-recommendation-algorithm/blob/master/PPT/heuristic_example_2.png)
 
 
 ## 과제수행 결과 (1)
@@ -129,7 +129,7 @@
 > #### 운전자 A : 어린이 보호구역 회피를 가장 선호하고 신호등 회피도 조금 선호하므로 어린이 보호구역이 1개 적고 신호등이 3개 적은 경로를 추천
 > #### 운전자 B : 어린이 보호구역 회피를 선호하지는 않아 최소시간 경로를 추천
 > #### 운전자 A는 두 경로의 소요시간 차이가 1분이고, 운전자 B는 두 경로의 소요시간 차이가 없음
-![시뮬레이션 1](https://github.com/parkjs1122/Projects/blob/master/Graduation%20Project/PPT/simulation_example_1.png)
+![시뮬레이션 1](https://github.com/parkjs1122/route-recommendation-algorithm/blob/master/PPT/simulation_example_1.png)
 
 
 ## 과제수행 결과 (2)
@@ -138,7 +138,7 @@
 > #### 운전자 A : 어린이 보호구역 회피를 가장 선호하고 신호등 회피도 조금 선호하므로 어린이 보호구역과 신호등이 없는 경로를 추천
 > #### 운전자 B : 단속카메라 회피를 선호하므로 단속카메라가 없는 경로를 추천
 > #### 운전자 A는 두 경로의 소요시간 차이가 없고, 운전자 B는 두 경로의 소요시간 차이가 1분임
-![시뮬레이션 2](https://github.com/parkjs1122/Projects/blob/master/Graduation%20Project/PPT/simulation_example_2.png)
+![시뮬레이션 2](https://github.com/parkjs1122/route-recommendation-algorithm/blob/master/PPT/simulation_example_2.png)
 
 
 ## 과제수행 결과 (3)
@@ -147,7 +147,7 @@
 > #### 운전자 A : 어린이보호구역 회피를 가장 선호하므로 어린이 보호구역이 없는 경로를 추천
 > #### 운전자 B : 단속카메라 회피를 선호하므로 단속카메라가 2개 적은 경로를 추천
 > #### 운전자 A는 두 경로의 소요시간 차이가 없고, 운전자 B는 두 경로의 소요시간 차이가 1분임
-![시뮬레이션 3](https://github.com/parkjs1122/Projects/blob/master/Graduation%20Project/PPT/simulation_example_2.png)
+![시뮬레이션 3](https://github.com/parkjs1122/route-recommendation-algorithm/blob/master/PPT/simulation_example_2.png)
 
 
 ## 과제 성과 및 개선방안
